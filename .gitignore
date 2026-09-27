@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/
+models/*.task
+samples/*.mp4
+samples/*.webm
+output/
+research/*.html
+.playwright-cli/

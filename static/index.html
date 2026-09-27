@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CRUX — ניתוח טיפוס</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="CRUX דף הבית" dir="ltr"><span class="brand-mark">↗</span> CRUX<span class="brand-sub">CLIMB ANALYSIS</span></a>
+  <div class="local-status"><span class="dot"></span> סביבת עבודה מקומית <span class="separator">/</span> <span id="model-status">בודק מודל…</span></div>
+</header>
+<main>
+  <div class="page-title"><div><p class="eyebrow" dir="ltr">YOUR MOVEMENT, FRAME BY FRAME</p><h1>ניתוח טיפוס</h1></div><span class="version">וידאו · תנועה · מסלול</span></div>
+  <div id="error" class="error" role="alert" hidden></div>
+  <div class="workspace">
+    <aside class="inspector">
+      <section>
+        <div class="section-heading"><span class="step">01</span><h2>בחירת סרטון</h2></div>
+        <label class="upload-zone" id="dropzone" tabindex="0" role="button" aria-label="העלאת סרטון">
+          <span class="upload-icon" aria-hidden="true">↑</span><strong>העלאת סרטון</strong><span>גרור לכאן או בחר קובץ</span><small>MP4 / MOV / WebM · עד 5 דקות, 500MB</small>
+          <input type="file" id="file" accept="video/mp4,video/quicktime,video/webm,.m4v" hidden>
+        </label>
+        <div class="select-label"><label for="samples">או התנסה בסרטון לדוגמה</label><span>↙</span></div>
+        <select id="samples"><option value="">בחר סרטון טיפוס</option></select>
+        <p class="sample-credit" id="sample-credit" hidden>דוגמאות: <a href="https://github.com/tommyjtl/climbing-analysis-toolbox" target="_blank" rel="noopener">climbing-analysis-toolbox</a> · MIT</p>
+      </section>
+      <section>
+        <div class="section-heading"><span class="step">02</span><h2>ניתוח הסרטון</h2></div>
+        <button id="analyze" class="primary full" disabled>התחל ניתוח <span>↖</span></button>
+        <button id="cancel" class="secondary full" hidden>ביטול עיבוד</button>
+        <div id="progress-section" hidden aria-live="polite"><div class="progress-label"><span id="stage">ממתין</span><span id="percent" dir="ltr">0%</span></div><progress id="progress" max="1" value="0"></progress></div>
+        <details id="analysis-settings" class="analysis-settings">
+          <summary><span>הגדרות ניתוח</span><span class="settings-meta">7 אפשרויות <i aria-hidden="true">⌄</i></span></summary>
+          <div class="settings-body">
+            <p class="hint">ברירת המחדל מתאימה לרוב הסרטונים. מצלמה קבועה ומטפס אחד בפריים יתנו תוצאה ברורה יותר.</p>
+            <div class="setting-title"><span>אזור המטפס</span><span class="help-tip" tabindex="0" role="button" aria-controls="help-crop" aria-expanded="false" aria-label="הסבר על אזור המטפס" data-help="help-crop" title="הצגת הסבר">?</span></div>
+            <button id="crop-toggle" class="secondary full" disabled>סימון אזור המטפס <span>⌗</span></button>
+            <div class="crop-info"><span id="crop-label">כל הפריים</span><button id="crop-clear" class="text-button" hidden>איפוס</button></div>
+            <p id="help-crop" class="setting-explanation" hidden>מגביל את זיהוי הגוף לאזור שסימנת. שימושי כשיש כמה אנשים בפריים; סמן את כל שטח התנועה של המטפס.</p>
+
+            <label class="range-label" for="smoothing"><span class="setting-name">החלקת תנועה <span class="help-tip" tabindex="0" role="button" aria-controls="help-smoothing" aria-expanded="false" aria-label="הסבר על החלקת תנועה" data-help="help-smoothing" title="הצגת הסבר">?</span></span><output id="smoothing-value">0.55 שנ׳</output></label>
+            <input id="smoothing" type="range" min="0.15" max="1.5" step="0.05" value="0.55">
+            <p id="help-smoothing" class="setting-explanation" hidden>ערך גבוה מפחית רעידות, אך עשוי לרכך שינויים מהירים ושיאי מהירות ו־Jerk. ערך נמוך שומר תנועות חדות, אך רגיש יותר לרעש.</p>
+
+            <label class="range-label" for="threshold"><span class="setting-name">סף תנועה <span class="help-tip" tabindex="0" role="button" aria-controls="help-threshold" aria-expanded="false" aria-label="הסבר על סף תנועה" data-help="help-threshold" title="הצגת הסבר">?</span></span><output id="threshold-value" dir="ltr">0.012 diag/s</output></label>
+            <input id="threshold" type="range" min="0.002" max="0.06" step="0.001" value="0.012">
+            <p id="help-threshold" class="setting-explanation" hidden>מהירות אגן שמתחתיה הזמן נחשב סטטי. סף גבוה יסווג יותר תנועה איטית כסטטית; סף נמוך ישאיר רק עצירות כמעט מוחלטות.</p>
+
+            <label class="range-label" for="visibility"><span class="setting-name">סף נראות <span class="help-tip" tabindex="0" role="button" aria-controls="help-visibility" aria-expanded="false" aria-label="הסבר על סף נראות" data-help="help-visibility" title="הצגת הסבר">?</span></span><output id="visibility-value">0.50</output></label>
+            <input id="visibility" type="range" min="0.1" max="1" step="0.05" value="0.5">
+            <p id="help-visibility" class="setting-explanation" hidden>ביטחון מינימלי בנקודת גוף. סף גבוה מסנן נקודות מסופקות אך יוצר יותר פערים; סף נמוך מרחיב כיסוי עם סיכון לטעויות.</p>
+
+            <label class="range-label" for="roi"><span class="setting-name">אזור דגימת צבע <span class="help-tip" tabindex="0" role="button" aria-controls="help-roi" aria-expanded="false" aria-label="הסבר על אזור דגימת צבע" data-help="help-roi" title="הצגת הסבר">?</span></span><output id="roi-value">40 px</output></label>
+            <input id="roi" type="range" min="20" max="100" step="2" value="40">
+            <p id="help-roi" class="setting-explanation" hidden>גודל הריבוע סביב היד או הרגל שממנו נדגם צבע האחיזה. אזור גדול עוזר באחיזות גדולות, אך עלול לכלול קיר או אחיזות שכנות.</p>
+
+            <label class="range-label" for="contact-radius"><span class="setting-name">סבילות תזוזת גפה <span class="help-tip" tabindex="0" role="button" aria-controls="help-contact-radius" aria-expanded="false" aria-label="הסבר על סבילות תזוזת גפה" data-help="help-contact-radius" title="הצגת הסבר">?</span></span><output id="contact-radius-value">8 px</output></label>
+            <input id="contact-radius" type="range" min="1" max="30" step="1" value="8">
+            <p id="help-contact-radius" class="setting-explanation" hidden>המרחק שבו יד או רגל עדיין נחשבת יציבה. ערך גבוה סובל יותר רעידות אך עלול ליצור מגע שגוי; ערך נמוך דורש יציבות רבה יותר.</p>
+
+            <label class="checkbox"><input type="checkbox" id="skin" checked><span>סינון גווני עור</span><span class="help-tip" tabindex="0" role="button" aria-controls="help-skin" aria-expanded="false" aria-label="הסבר על סינון גווני עור" data-help="help-skin" title="הצגת הסבר">?</span></label>
+            <p id="help-skin" class="setting-explanation" hidden>מסיר גוונים שנראים כמו עור לפני זיהוי האחיזה. מפחית טעויות ליד פרקי הידיים, אך עלול לסנן אחיזות כתומות או בז׳.</p>
+            <p class="hint">לבן, שחור ואפור אינם מזוהים באופן אמין בשיטת דגימת הצבע המקומית.</p>
+          </div>
+        </details>
+      </section>
+      <section class="history-section"><div class="section-heading"><span class="step">03</span><h2>ניתוחים אחרונים</h2></div><div id="history"><p class="hint">הניתוחים שלך יופיעו כאן.</p></div></section>
+    </aside>
+    <div class="analysis-workspace">
+      <div class="video-heading"><div><span class="eyebrow">סביבת צפייה</span><h2 id="clip-name">בחר סרטון כדי להתחיל</h2></div><div class="segmented" id="video-tabs" hidden><button class="active" data-video="preview">ניתוח</button><button data-video="source">מקור</button></div></div>
+      <div class="video-stage" id="video-stage">
+        <div class="empty" id="empty"><span class="empty-symbol" aria-hidden="true">↗</span><h2>כל תנועה מספרת משהו.</h2><p>העלה טיפוס כדי לעקוב אחר המסלול,<br>לראות את הקצב ולבחון את רציפות התנועה.</p><button id="empty-upload" class="secondary">בחירת סרטון <span>+</span></button><span class="empty-footer" dir="ltr">POSE TRACKING / MOTION / HOLD COLORS</span></div>
+        <video id="video" controls playsinline preload="metadata" hidden></video>
+        <canvas id="crop-canvas" hidden aria-label="גרור מלבן סביב אזור התנועה של המטפס"></canvas>
+        <div id="crop-help" hidden>גרור מלבן סביב אזור התנועה כולו, ואז לחץ על ״סיום סימון״.</div>
+      </div>
+      <div class="video-footer"><span id="video-meta">העיבוד מתבצע במחשב שלך</span><span id="timecode" dir="ltr">00:00.0</span></div>
+      <div id="results" hidden>
+        <section class="chart-section unified-chart">
+          <div class="chart-heading">
+            <div><h2>תנועה ומגעים לאורך הטיפוס</h2><p class="hint">כל שכבות המידע מסונכרנות עם הסרטון על אותו ציר זמן.</p></div>
+            <button id="chart-collapse" class="chart-collapse" type="button" aria-controls="chart-panel" aria-expanded="true">הסתר גרף ↑</button>
+          </div>
+          <div id="chart-panel">
+            <div class="chart-toolbar">
+              <div class="segmented" id="chart-tabs" aria-label="בחירת מדד תנועה"><button class="active" data-chart="speed">מהירות</button><button data-chart="jerk">Jerk</button></div>
+              <div class="layer-switches" aria-label="שכבות הגרף">
+                <button class="layer-button active" data-layer="motion" aria-pressed="true"><i class="motion-symbol" aria-hidden="true"></i> תנועה</button>
+                <button class="layer-button active" data-layer="contacts" aria-pressed="true"><i class="contacts-symbol" aria-hidden="true"></i> מגעים</button>
+              </div>
+            </div>
+            <div class="chart-meta"><span id="chart-unit" dir="ltr">image diagonals / s</span><span>לחץ על הקו או על נקודת מגע כדי לעבור לרגע בסרטון</span></div>
+            <svg id="chart" viewBox="0 0 900 235" role="img" aria-label="גרף תנועה ומגעי ידיים ורגליים לאורך הסרטון"></svg>
+            <label class="sr-only" for="seek">מעבר לזמן בסרטון</label><input id="seek" type="range" min="0" max="1" step="0.01" value="0">
+            <div class="combined-chart-legend"><span><i class="hand-symbol"></i> ידיים</span><span><i class="foot-symbol"></i> רגליים</span><p id="chart-hint">פערים בקו הם זמן ללא מדידה אמינה. כל נקודה שומרת את צבע האחיזה שזוהה.</p></div>
+          </div>
+        </section>
+        <details id="contact-details" class="contacts-section">
+          <summary><span>אירועי צבע שזוהו</span><span class="contacts-summary-meta"><span id="contact-count"></span><i aria-hidden="true">⌄</i></span></summary>
+          <div id="contacts" class="contact-list"></div>
+        </details>
+        <div class="metrics-strip">
+          <div><span>זמן סטטי</span><strong id="static-metric">—</strong><small id="static-detail">מתוך הזמן המדיד</small></div>
+          <div><span>מהירות ממוצעת</span><strong id="speed-metric">—</strong><small dir="ltr">image diagonals / s</small></div>
+          <div><span>Jerk חציוני</span><strong id="jerk-metric">—</strong><small dir="ltr">image diagonals / s³</small></div>
+          <div><span>כיסוי מעקב אגן</span><strong id="coverage-metric">—</strong><small id="coverage-detail">פריימים תקינים</small></div>
+        </div>
+        <section class="coaching-section">
+          <div class="chart-heading"><div><h2>סיכום למטפס</h2><p class="hint">רמזים מתוך התנועה שנמדדה בווידאו</p></div><span class="tag">ניתוח דו־ממדי</span></div>
+          <div class="technique-strip">
+            <div><span>אות הנעה בעלייה</span><strong id="drive-metric">—</strong><small id="drive-detail">רגליים / ידיים</small></div>
+            <div><span>זרועות ישרות בעצירות</span><strong id="arms-metric">—</strong><small>מתוך תנוחות עצירה שנמדדו</small></div>
+            <div><span>עצירות ממושכות</span><strong id="pauses-metric">—</strong><small id="pauses-detail">מעל 0.5 שנ׳</small></div>
+            <div><span>שימוש באחיזות</span><strong id="holds-metric">—</strong><small id="holds-detail">ידיים / רגליים</small></div>
+          </div>
+          <div id="coaching-list" class="coaching-list"></div>
+          <p id="technique-note" class="method-note">חלוקת הידיים והרגליים היא קשר קינמטי בין שינויי זוויות המפרקים לעליית האגן. היא אינה מדידת כוח, עומס או אנרגיה.</p>
+        </section>
+        <div class="detail-columns">
+          <section class="route-section"><div class="chart-heading"><h2>צבע המסלול</h2><span id="route-status" class="tag">לא ודאי</span></div><div class="route-answer"><span id="route-swatch"></span><strong id="route-color">אין מספיק ראיות</strong></div><p id="route-detail" class="hint"></p><div id="route-bars"></div><p class="hint">הערכה לפי צבע ליד גפיים יציבות. אין כאן זיהוי ודאי של אחיזה בפועל.</p></section>
+          <section><h2>חלוקת זמן</h2><div id="time-bar" class="time-bar" aria-label="חלוקת זמן סטטי, תנועה וללא מדידה"></div><div id="time-legend" class="time-legend"></div><div class="quality-row"><span>יחס סטטי / תנועה</span><strong id="ratio">—</strong></div><div class="quality-row"><span>כיסוי מדדי תנועה</span><strong id="metric-coverage">—</strong></div></section>
+        </div>
+        <div id="warnings" class="warnings"></div>
+        <section class="downloads"><div><h2>התוצאות שלך</h2><p class="hint">הווידאו כולל שלד, מסלול אגן ומדדים. הייצוא ללא שמע.</p></div><div class="download-links"><a id="download-video" class="primary" download>הורדת וידאו ↓</a><a id="download-csv" class="secondary" download>CSV ↓</a><a id="download-json" class="secondary" download>JSON ↓</a></div></section>
+      </div>
+      <div id="pre-results" class="pre-results"><span>01 <b>עקוב אחרי האגן</b></span><span>02 <b>בחן את קצב התנועה</b></span><span>03 <b>זהה צבעי אחיזות</b></span></div>
+    </div>
+  </div>
+  <footer class="page-footer"><span dir="ltr">CRUX / LOCAL VISION LAB</span><span>מרכז האגן הוא אומדן דו־ממדי. המדדים תלויים בזווית הצילום, בנראות ובהגדרות.</span></footer>
+</main>
+</body>
+</html>
